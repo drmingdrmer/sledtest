@@ -10,33 +10,36 @@ use std::time::Duration;
 fn rt(i: i32) -> Runtime {
     Builder::new_multi_thread()
         .worker_threads(1)
-        .thread_name("rt2")
+        .thread_name(format!("rt-{}", i))
         .thread_stack_size(3 * 1024 * 1024)
         .build()
         .unwrap()
 }
 
-async fn doit() {
-    let t = tempdir().expect("create temp dir to store meta");
-    let tmpdir = t.path().to_str().unwrap().to_string();
-
-    let db = sled::open(tmpdir).expect("open sled db");
-
+async fn doit(db: sled::Tree) {
     db.insert(b"foo1", b"bar").unwrap();
     db.flush_async().await.unwrap();
     println!("doit returning");
 }
 
 fn main() -> anyhow::Result<()> {
+    let t = tempdir().expect("create temp dir to store meta");
+    let tmpdir = t.path().to_str().unwrap().to_string();
+
+    let db = sled::open(tmpdir).expect("open sled db");
+
     let mut handles = vec![];
     for i in 0..10 {
-        let th = thread::spawn(move || {
-            rt(i).block_on(async {
-                doit().await;
-                println!("doit() done!");
-            });
-        });
+        let th = {
+            let t = db.open_tree(format!("tree-{}", i)).unwrap();
 
+            thread::spawn(move || {
+                rt(i).block_on(async {
+                    doit(t).await;
+                    println!("doit() done!");
+                });
+            })
+        };
         handles.push(th);
     }
 
