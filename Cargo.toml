@@ -9,7 +9,8 @@ edition = "2018"
 [dependencies]
 
 anyhow = "1.0.42"
-futures = "0.3"
-sled = { version = "0.34.6", features = ["event_log", "pretty_backtrace"]}
+# sled = { version = "0.34.6",  default-features = false,  features = ["event_log", "pretty_backtrace"]}
+sled = { git = "https://github.com/datafuse-extras/sled", tag = "0.34.7-datafuse.1",default-features = false }
+
 tempfile = "3.2.0"
 tokio = { version = "1.8.2", features = ["macros", "rt","rt-multi-thread", "sync"] }
