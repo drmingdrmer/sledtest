@@ -1,11 +1,8 @@
-use std::{panic, thread};
+use std::thread;
 use tempfile::tempdir;
 use tempfile::TempDir;
 use tokio::runtime::Builder;
 use tokio::runtime::Runtime;
-
-use std::fmt;
-use std::time::Duration;
 
 fn rt(i: i32) -> Runtime {
     Builder::new_multi_thread()
