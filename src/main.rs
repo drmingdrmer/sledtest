@@ -16,10 +16,13 @@ fn rt(i: i32) -> Runtime {
         .unwrap()
 }
 
-async fn doit(db: sled::Tree) {
-    db.insert(b"foo1", b"bar").unwrap();
-    db.flush_async().await.unwrap();
-    println!("doit returning");
+async fn insert_flush(i: i32, tree: sled::Tree) {
+    tree.insert(b"foo1", b"bar").unwrap();
+    tree.flush_async().await.unwrap();
+    let ptr = &tree as *const _;
+    let addr = ptr as usize;
+    println!("addr: {:X}", addr);
+    println!("{} insert_flush returning", i);
 }
 
 fn main() -> anyhow::Result<()> {
@@ -35,8 +38,15 @@ fn main() -> anyhow::Result<()> {
 
             thread::spawn(move || {
                 rt(i).block_on(async {
-                    doit(t).await;
-                    println!("doit() done!");
+                    tokio::spawn({
+                        let t = t.clone();
+                        async move {
+                            insert_flush(i, t).await;
+                            println!("{} spawned done!", i);
+                        }
+                    });
+                    insert_flush(i, t).await;
+                    println!("{} insert_flush() done!", i);
                 });
             })
         };
